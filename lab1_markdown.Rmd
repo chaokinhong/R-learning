@@ -1,0 +1,68 @@
+---
+title: "lab1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Create your first data frame
+
+```{r cars}
+animals <- c('Snake','Ostrich','Cat','Spider')
+num_legs <- c(0,2,4,8)
+animals_df <- data.frame(animals,num_legs)
+animals_df
+```
+
+## Matrix operations
+
+```{r pressure, echo=FALSE}
+x_vector <- seq(from=12,to=2,by=-2)
+x_vector
+x_matrix <- matrix(x_vector,2,3)
+x_matrix
+y_matrix <- matrix(seq(1,4),2,2)
+y_matrix
+z_matrix <- matrix(seq(from=4,to=10,by=+2),2,2)
+z_matrix
+y_matrix_t <-t(y_matrix)
+y_matrix_t
+z_matrix_t <-t(z_matrix)
+z_matrix_t
+sum_matrix <- y_matrix + z_matrix
+sum_matrix
+sum_matrix_t <- y_matrix_t + z_matrix_t
+sum_matrix_t
+multi_matrix_one <- y_matrix%*%z_matrix
+multi_matrix_two <- z_matrix%*%y_matrix
+multi_matrix_one
+multi_matrix_two
+potmulti_matrix_one <- y_matrix*z_matrix
+potmulti_matrix_two <- z_matrix*y_matrix
+potmulti_matrix_one
+potmulti_matrix_two
+multi_matrix_three <- y_matrix%*%x_matrix
+multi_matrix_three
+```
+The error mesage in XY is non-conformable arguments
+The reasons behind this is the cols of the first matrix must equal to the rows of second matrix in matrix multiplication
+```{r}
+multi_matrix_four <- x_matrix%*%y_matrix
+```
+When a matrix multi the inverse of itself, it becomes a unit matrix
+This generic function solves the equation a %*% x = b for x, where b can be either a vector or a matrix.
+Usage
+solve(a, b, ...)
+
+```{r}
+inverse_y_matrix <-solve(y_matrix)
+inverse_y_matrix
+mulit_y <-inverse_y_matrix%*%y_matrix
+mulit_y
+multi_x <-inverse_y_matrix%*%x_matrix
+multi_x
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
