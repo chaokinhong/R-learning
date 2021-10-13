@@ -1,0 +1,137 @@
+---
+title: "lab3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Missing data and iteration
+## impute by median
+```{r}
+impute_by_median<-function(x){
+  mu<-median(x,na.rm=1)
+  impute_f<-function(z){
+    if(is.na(z)){
+      return(mu)
+    }else{
+      return(z)
+    }
+  }
+  return(map_dbl(x,impute_f))
+}
+
+
+v<-c(1,2,NA,4)
+impute_by_median(v)
+```
+## map2 function
+iterates over two variables in paralled rather than one
+
+```{r}
+x<-seq(0,10,0.1)
+y<-5*x+1
+df_xy <- data.frame(x,y)
+df_xy %>% head(5)
+df_xy %>% mutate(z=map2_dbl(x,y,~.x+.y))%>%
+  head(5)
+```
+
+```{r}
+ sometimes_missing <- function(index,value){
+   if(index%%5==0){
+     return(NA)
+   }else{
+     return(value)
+   }
+ }
+sometimes_missing(14,25)
+sometimes_missing(15,25)
+```
+```{r}
+new_y <- map2_dbl(row_number(y),y,sometimes_missing)
+df_xy_missing <- data.frame(x,y=new_y)
+df_xy_missing
+```
+
+```{r}
+df_xy_impute <- df_xy_missing %>% mutate(x=x,y=impute_by_median(y))
+df_xy_impute                                     
+                                          
+```
+Combine the dataframes df_xy, df_xy_missing and df_xy_impute and plot it
+```{r}
+df_xy <- df_xy %>%mutate(source='original')
+df_xy_missing <- df_xy_missing %>% mutate(source='corrupted')
+df_xy_impute <- df_xy_impute %>% mutate(source='imputed')
+df_combined <- rbind(df_xy,df_xy_missing,df_xy_impute)
+
+df_combined %>% ggplot(aes(x=x,y=y,color=source))+geom_point()+facet_wrap(~source)+geom_smooth(method='lm')
+
+```
+ 
+# Tidying data with pivot function
+1. read xls by readxl
+```{r}
+folder_path <- 'C:/Users/Cam/Desktop/firstRproject/firstRProject/'
+file_name <- 'HockeyLeague.xlsx'
+file_path <- paste(folder_path,file_name,sep = "")
+wins_data_frame <- read_excel(file_path,sheet = 'Wins')
+```
+ 
+```{r}
+wins_data_frame %>% select(1:5) %>% head(3)
+rename_data <- wins_data_frame %>% rename(Team=...1)
+longer_data <- rename_data %>% pivot_longer(cols = !Team, names_to = 'Year',values_to = 'Value',)
+separate_data <- longer_data %>% separate(Value, into = c('Wins','Total'), sep='of', convert = TRUE)
+wins_tidy <- separate_data %>% mutate(Team = as.character(Team),Year= as.integer(Year), Wins = as.integer(Wins), Total = as.integer(Total))
+wins_tidy%>% dim()
+wins_tidy %>% head(5)
+```
+```{r}
+losses_data <- read_excel(file_path,sheet = 'Losses')
+losses_tidy <- losses_data %>% rename(Team=...1) %>% pivot_longer(cols = !Team,names_to = 'Year',values_to = 'Value') %>% separate(Value,into = c('Losses','Total'), sep = 'of', convert = TRUE) %>% mutate(Team = as.character(Team),Year=as.integer(Year),Losses=as.integer(Losses),Total=as.integer(Total))
+
+```
+```{r}
+data_combine <- inner_join(wins_tidy,losses_tidy)
+hockey_df <- data_combine %>% mutate(Wins=Wins,Losses=Losses,Total=Total,Draws=Total-(Wins+Losses),Wins_rt=Wins/Total,Losses_rt=Losses/Total,Draws_rt=Draws/Total)
+head(hockey_df)
+
+```
+## conclude
+
+```{r}
+hockey_conclude <- hockey_df %>% group_by(Team) %>% select(Wins_rt,Losses_rt,Draws_rt) %>%summarise(win_mean=mean(Wins_rt,na.rm=TRUE),lose_mean=mean(Losses_rt,na.rm=TRUE),draw_mean=mean(Draws_rt,na.rm=TRUE),win_median=median(Wins_rt,na.rm=TRUE),lose_median=median(Losses_rt,na.rm=TRUE),draw_median=median(Draws_rt,na.rm=TRUE))
+hockey_conclude %>% arrange(win_mean)
+
+```
+
+## Most correlated variables
+```{r}
+head(penguins)
+penguins_data <- penguins %>% select(-species,-island,-sex)
+penguins_data%>% select(all_of(body_mass_g))
+c(names(penguins_data))
+
+
+
+```
+## correlate function
+-unlist simplifies it to produce a vector which contains all the atomic components which occur in x.
+-abs(x) computes the absolute value of x
+-which() Give the TRUE indices of a logical object, allowing for array indices.
+
+```{r}
+data_name <- c(names(penguins_data))
+year<-c('1','2','3')
+top_correlates_by_var <- function(df){
+ 
+  }
+  
+}
+top_correlates_by_var(penguins_data)
+```
+
+
