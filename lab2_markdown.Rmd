@@ -1,0 +1,217 @@
+---
+title: "lab2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Visualisation
+
+```{r}
+hawksSmall<-drop_na(select(Hawks,Age,Day,Month,Year,CaptureTime,Species,Wing,Weight,Tail))
+dim(hawksSmall)
+head(hawksSmall)
+```
+
+## Generate a histogram(one variables)
+```{r}
+weight_count_plot <- ggplot(data=hawksSmall,aes(x=Weight))+xlab('Weight(g')+ylab('Count')+geom_histogram(binwidth = 100)
+weight_count_plot
+```
+
+## Generate a density plot
+```{r}
+tail_density_1 <- ggplot(data = hawksSmall,aes(x=Tail))+xlab('Tail (mm)')+ylab('Density')+geom_density(adjust=0.5)
+tail_density_1
+tail_density_2 <-ggplot(data = hawksSmall,aes(x=Tail))+xlab('Tail (mm)')+ylab('Density')+geom_density(adjust=1)
+tail_density_1
+```
+
+## Bivariate density plot
+```{r}
+Bi_den_plot <- ggplot(data=hawksSmall,aes(x=Tail,color=Species))+xlab('Tail(mm)')+ylab('Density')+geom_density()+theme_bw()
+Bi_den_plot
+```
+
+## violin plot
+```{r}
+violin_plot <- ggplot(data = hawksSmall,aes(x=Tail,fill=Species,y=Species))+xlab('Tail(mm)')+ylab('Species')+geom_violin()
+violin_plot
+```
+
+## Scatter Plot
+```{r}
+scatter_plot <- ggplot(data=hawksSmall,aes(x=Tail,y=Weight,shape=Species,color=Species))+xlab('Tail(mm)')+ylab('Weight (gm)')+geom_point()
+scatter_plot
+```
+
+## Trend lines and Facet Wraps
+```{r}
+facet_trendline <- ggplot(data=hawksSmall,aes(x=Tail,y=Weight,color=Species))+xlab('Tail(mm)')+ylab('Weight(gm)')+geom_point()+facet_wrap(~Species)+geom_smooth(method = 'lm')
+facet_trendline
+```
+
+# Data wrangling
+
+## Combine select with filter
+columns are variable of example
+use count function to count the total case in the dataFrame
+```{r}
+hSF <- hawksSmall %>% filter(Species=='RT'& Weight > 1000) %>% select(Wing,Weight,Tail)
+hSF
+count(hSF)
+```
+## Arrange function (sort the dataframe)
+```{r}
+arrange_hSF <- hSF %>% arrange(Wing)
+head(arrange_hSF)
+```
+##Join and rename function
+1.create a dataframe of full species name
+unique() returns a vector, data frame or array with duplicate elements/rows removed
+```{r}
+help(unique)
+species_code <- unique(hawksSmall$Species)
+species_name_full <-c('Red-tailed',"Cooper's",'Sharp-shinned')
+species_name_df <- data.frame(species_code,species_name_full)
+species_name_df
+```
+2. fuse this two dataFrame with join function
+```{r}
+new_hawks <- species_name_df %>% rename(Species=species_code)
+new_hawks
+hawksFullNames <- Hawks %>% left_join(new_hawks) 
+hawksFullName <- hawksFullNames %>% select(-Species) %>% rename(Species = species_name_full)
+hawksFullName
+
+```
+
+## the mutate function (create a new columns)
+```{r}
+head(Hawks)
+hawksWithBMI <- Hawks %>% mutate(bird_BMI = 1000*Weight/Wing^2) %>% select(Species,bird_BMI) %>% arrange(desc(bird_BMI))
+hawksWithBMI
+healthy_hawks <- hawksWithBMI %>% filter(bird_BMI < 100) %>% ggplot(aes(x=bird_BMI,y=Species,fill=Species))+ xlab('bird_BMI')+ ylab('Species')+geom_violin()+xlim(c(0,17))
+healthy_hawks
+```
+
+##Summarize and groupby function(computes vector functions across the entire dataframe)
+
+```{r}
+hawksFullName %>%group_by(Species)%>% summarise(num_rows = n(),mn_wings=mean(Wing,na.rm = 1),md_wing=median(Wing,na.rm = 1),t_mn_wing=mean(Wing,na.rm = 1,trim = 0.01),tail_wing_ratio=mean(Tail/Wing,na.rm = 1))
+
+```
+
+## The across function (summarize to all columns at once)
+e.g find out all the missing value by summarize and across
+```{r}
+hawksFullName %>% group_by(Species) %>% summarize(across(everything(),~sum(is.na(.x))))
+```
+
+# Exploratory data analysis
+
+## Combining location estimators with the summarise function
+```{r}
+Hawks %>% summarise(Wing_mean= mean(Wing,na.rm=1),Wing_t_mean=mean(Wing,na.rm=1,trim=0.1),Wing_med=median(Wing,na.rm=1),Weight_mean=mean(Weight,na.rm=1),Weight_t_mean=mean(Weight,na.rm=1,trim=0.1),Weigth_med=median(Weight,na.rm=1))
+```
+
+## Combine group by function
+```{r}
+Hawks %>% group_by(Species) %>% summarise(Wing_mean= mean(Wing,na.rm=1),Wing_t_mean=mean(Wing,na.rm=1,trim=0.1),Wing_med=median(Wing,na.rm=1),Weight_mean=mean(Weight,na.rm=1),Weight_t_mean=mean(Weight,na.rm=1,trim=0.1),Weigth_med=median(Weight,na.rm=1))
+```
+
+## Robustness of location estimators
+```{r}
+hal<-Hawks$Hallux # Extract the vector of hallux lengths
+hal<-hal[!is.na(hal)] # Remove any nans
+```
+
+To investigate the effect of outliers on estimates of location we generate a new vector called “corrupted_hall”
+with 10 outliers each of value 100 created as follows:
+```{r}
+outlier_val<-100
+num_outliers<-10
+corrupted_hal<-c(hal,rep(outlier_val,times=num_outliers))
+mean(hal)
+mean(corrupted_hal)
+```
+
+investigate what happens as the number of outliers changes from 0 to 1000.
+mean_vector
+rep replicates the values in x.
+```{r}
+num_outliers_vect<-seq(0,1000)
+means_vect<-c()
+for(num_outliers in num_outliers_vect){
+corrupted_hal<-c(hal,rep(outlier_val,times=num_outliers))
+means_vect<-c(means_vect,mean(corrupted_hal))
+}
+
+```
+
+median_vector
+```{r}
+medians_vect<-c()
+for(num_outliers in num_outliers_vect){
+  corrupted_hal<-c(hal,rep(outlier_val,times=num_outliers))
+  medians_vect<-c(medians_vect,median(corrupted_hal))
+}
+```
+
+t_means_vector
+```{r}
+t_means_vect <-c()
+for(num_outliers in num_outliers_vect){
+  corrupted_hal<-c(hal,rep(outlier_val,times=num_outliers))
+  t_means_vect<-c(t_means_vect,mean(corrupted_hal,trim=0.1))
+}
+
+```
+
+Combine these vectors into a data frame 
+```{r}
+df_means_medians<-data.frame(num_outliers=num_outliers_vect,
+mean=means_vect,t_mean=t_means_vect,
+median=medians_vect)
+
+```
+
+use the code below to reshape and plot the data
+```{r}
+df_means_medians%>%
+pivot_longer(!num_outliers, names_to = "Estimator", values_to = "Value")%>%
+ggplot(aes(x=num_outliers,color=Estimator,
+linetype=Estimator,y=Value))+
+geom_line()+xlab("Number of outliers")
+```
+
+## Box plot and outliers
+```{r}
+Hawks %>% ggplot(aes(x=Species,y=Weight))+xlab('Species')+ylab('Weight')+geom_boxplot()
+```
+
+count the number of outliers
+```{r}
+numberof_outliers <- function(species){
+  q25<-quantile(species,0.25,na.rm=1)
+  q75<-quantile(species,0.75,na.rm=1)
+  iq_range<- q75-q25
+  outliers <- species[(species>q75+1.5*iq_range) | (species<q25-1.5*iq_range)]
+  return(length(outliers))
+}
+
+CH <- Hawks %>% filter(Species=='CH')
+RT <- Hawks %>% filter(Species=='RT')
+SS <- Hawks %>% filter(Species=='SS')
+CH_outliers<- numberof_outliers(CH$Weight)
+RT_outliers<- numberof_outliers(RT$Weight)
+SS_outliers<- numberof_outliers(SS$Weight)
+Speices<-c('CH','RT','SS')
+num_outliers_weight<-c(CH_outliers,RT_outliers,SS_outliers)
+outliers_df <- data.frame(Speices,num_outliers_weight)
+outliers_df
+
+```
+
