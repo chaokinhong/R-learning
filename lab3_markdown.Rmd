@@ -112,8 +112,7 @@ hockey_conclude %>% arrange(win_mean)
 ```{r}
 head(penguins)
 penguins_data <- penguins %>% select(-species,-island,-sex)
-penguins_data%>% select(all_of(body_mass_g))
-c(names(penguins_data))
+
 
 
 
@@ -124,13 +123,27 @@ c(names(penguins_data))
 -which() Give the TRUE indices of a logical object, allowing for array indices.
 
 ```{r}
-data_name <- c(names(penguins_data))
-year<-c('1','2','3')
+
 top_correlates_by_var <- function(df){
- 
+  col_names<- c(names(df))
+  cor_name_list <- list()
+  cor_val_list <- list()
+  for(val in col_names){
+    v_cal<- df %>%select(all_of(val))
+    v_other_val <-  df %>% select_if(is.numeric) %>% select(-all_of(val))
+    cor <- unlist(map(v_other_val,function(x){cor(x,v_cal,use = 'complete.obs')}))
+    max_cor <- names(which(abs(cor)==max(abs(cor))))
+    max_cor_names <- cor[max_cor]
+    max_cor_values <- as.double(cor[max_cor])
+    cor_name_list <- append(cor_name_list,max_cor_names)
+    cor_val_list <- append(cor_val_list,max_cor_values)
+  }
+  name1 <-names(as.data.frame(cor_name_list))
+  name2 <-names(as.data.frame(cor_val_list))
+  cor_df <- data.frame(col_names,name1,name2)
+  return(cor_df)
   }
   
-}
 top_correlates_by_var(penguins_data)
 ```
 
