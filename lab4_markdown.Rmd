@@ -63,20 +63,20 @@ for(i in 1:5){
 }
 ```
 
-sampling_with_replacement_simulation
+## sampling_with_replacement_simulation
 trial=test
 ```{r}
 num_trials <- 1000 #set the number of trials
 set.seed(0) #set the random seed
 
 sampling_with_replacement_simulation <- data.frame(trial=1:num_trials) %>% mutate(sample_balls=map(.x=trial,~sample(10,35,replace=TRUE)))
-
 #count red ball, 1,2,3 = red
 sampling_with_replacement_simulation <-sampling_with_replacement_simulation %>% mutate(num_reds=map_dbl(.x=sample_balls,~sum(.x<4)))
 
 
 #pull() is similar to $. sample$num_reds
 num_reds_in_simulation <- sampling_with_replacement_simulation %>% pull(num_reds)
+
 
 prob_by_num_reds <- prob_by_num_reds %>% mutate(simulation_count=map_dbl(.x=num_reds,~sum(num_reds_in_simulation==.x)))
 prob_by_num_reds
@@ -89,4 +89,30 @@ prob_by_num_reds %>% rename(Simulation = simulation_count,Expected=expected_coun
 
 
 ```
+## Sample without replacement
+```{r}
+set.seed(0)
+num_of_trials <- 1000
+spheres <- 100
+red_spheres <- 50
+blue_spheres <- 30
+green_spheres <- 20
+sample_without_replacement <- data.frame(Trial=1:num_of_trials) %>% mutate(Sample_sphere = map(.x=Trial,~sample(100,10,replace = FALSE)))
 
+sample_without_replacement <- sample_without_replacement %>% mutate(nums_red=map_dbl(.x=Sample_sphere,~sum(.x<31)),num_blue=map_dbl(.x=Sample_sphere,~sum(.x>31 & .x<81)),num_green=map_dbl(.x=Sample_sphere,~sum(.x > 81 & .x<101)))
+
+red <- sample_without_replacement %>% pull(nums_red)
+blue <- sample_without_replacement %>% pull(num_blue)
+green <- sample_without_replacement %>% pull(num_green)
+min_x <- pmin(red,blue,green)
+counts <- map_dbl(.x=min_x,~sum(.x==0))
+count <- 0
+for(i in counts){
+  if(i==0){
+    count<-count+1
+  }
+}
+prop <- count/1000
+prop
+```
+ 
