@@ -1,0 +1,92 @@
+---
+title: "lab4"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Bayes theorem
+## Conditional probabilities
+
+## Sampling with replacement
+compute the number of different subsets of size 3 from a collectiom of size 8
+choose()
+example(10)
+```{r cars}
+choose(8,3)
+
+prob_red_spheres <- function(z){
+  possible_subsets <- choose(35,z)
+  poss_red <- (3/10)^z
+  poss_not_red <- (7/10)^(35-z)
+  prob <- possible_subsets*poss_red*poss_not_red
+  return(prob)
+}
+
+prob_red_spheres(20)
+
+```
+
+prob red df
+```{r}
+num_reds <- seq(1,35)
+prob <- prob_red_spheres(num_reds)
+prob_by_num_reds <- data.frame(num_reds,prob)
+prob_by_num_reds %>% head(3)
+```
+
+prob red graph
+```{r}
+red_line_graph <- prob_by_num_reds %>% ggplot(aes(x=num_reds,y=prob))+geom_line()+xlab('Number of reds')+ylab('Probability')
+red_line_graph
+```
+
+## Sample and set seed
+sample takes a sample of the specified size from the elements of x using either with or without replacement.
+Get a different answer every time we run the code is problematic
+To avoid this process we set a random seed set.seed() to get the same output every time
+```{r}
+sample(10,35,replace=TRUE)
+
+set.seed(0)
+for(i in 1:5){
+  print(sample(100,5,replace=FALSE))
+  #result diff
+}
+
+for(i in 1:5){
+  set.seed(1)
+  print(sample(100,5,replace=FALSE))
+  #result same because of set.seed()
+}
+```
+
+sampling_with_replacement_simulation
+trial=test
+```{r}
+num_trials <- 1000 #set the number of trials
+set.seed(0) #set the random seed
+
+sampling_with_replacement_simulation <- data.frame(trial=1:num_trials) %>% mutate(sample_balls=map(.x=trial,~sample(10,35,replace=TRUE)))
+
+#count red ball, 1,2,3 = red
+sampling_with_replacement_simulation <-sampling_with_replacement_simulation %>% mutate(num_reds=map_dbl(.x=sample_balls,~sum(.x<4)))
+
+
+#pull() is similar to $. sample$num_reds
+num_reds_in_simulation <- sampling_with_replacement_simulation %>% pull(num_reds)
+
+prob_by_num_reds <- prob_by_num_reds %>% mutate(simulation_count=map_dbl(.x=num_reds,~sum(num_reds_in_simulation==.x)))
+prob_by_num_reds
+
+##expected count
+prob_by_num_reds <- prob_by_num_reds %>% mutate(expected_count = num_trials*prob)
+
+prob_by_num_reds %>% rename(Simulation = simulation_count,Expected=expected_count)%>% pivot_longer(cols=c('Simulation','Expected'),names_to = 'Type',values_to = 'count') %>% ggplot(aes(num_reds,count)) + geom_line(aes(linetype=Type,color=Type)) + scale_linetype_manual(values = c('solid','dashed')) + theme_bw() + xlab('Numbers of reds') + ylab('Count')
+                  
+
+
+```
+
