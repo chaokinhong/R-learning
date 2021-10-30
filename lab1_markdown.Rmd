@@ -1,6 +1,7 @@
 ---
 title: "lab1"
 output: html_document
+
 ---
 
 ```{r setup, include=FALSE}
@@ -48,9 +49,8 @@ multi_matrix_three
 ```
 The error mesage in XY is non-conformable arguments
 The reasons behind this is the cols of the first matrix must equal to the rows of second matrix in matrix multiplication
-```{r}
 multi_matrix_four <- x_matrix%*%y_matrix
-```
+
 When a matrix multi the inverse of itself, it becomes a unit matrix
 This generic function solves the equation a %*% x = b for x, where b can be either a vector or a matrix.
 Usage
@@ -65,4 +65,12 @@ multi_x <-inverse_y_matrix%*%x_matrix
 multi_x
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## plot
+```{r}
+plot_x <- seq(from=0,to=20,by=0.01)
+plot_y <- sin(plot_x)
+sin_df <- data.frame(plot_x,plot_y)
+head(sin_df,3)
+plot(plot_x,plot_y)
+```
+

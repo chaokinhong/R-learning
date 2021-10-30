@@ -8,7 +8,37 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Bayes theorem
+```{r}
+p_A<-0.9
+p_B_given_A<-0.8
+p_not_B_given_not_A<-0.75
+p_B<-p_B_given_A*p_A+(1-p_not_B_given_not_A)*(1-p_A)
+p_A_given_B<-p_B_given_A*p_A/p_B ##Bayes theorem
+p_A_given_B
+```
+
 ## Conditional probabilities
+Suppose that A,B ∈ E and A ⊆ B. Give an expression for P(A|B) in terms of P(A) and P(B). What
+about when P(A \ B) = 0?
+If P(A \ B) = 0 then P(A) = P(A ∩ B) + P(A ∩ Bc) = P(A ∩ B) + P(A \ B) = P(A ∩ B). Hence
+P(A|B) = P(A ∩ B) P(B) = P(A) P(B).
+Note that this includes the case where A ⊆ B so A \ B = ∅
+
+Suppose that A, B ∈ E with A∩B = ∅. Give an expression for P(A|B). What about when P(A∩B) = 0?
+If P(A ∩ B) = 0 then P(A|B) = P(A ∩ B)/P(B) = 0. This includes the case where A ∩ B = ∅.
+
+Suppose that A, B ∈ E with B ⊆ A. Give an expression for P(A|B). What about when P(B \ A) = 0?
+If P(B \ A) = 0 then P(B) = P(A ∩ B) + P(Ac ∩ B) = P(A ∩ B) + P(B \ A) = P(A ∩ B) and so
+P(A|B) = P(A ∩ B)/P(B) = P(B)/P(B) = 1. This includes the case where B ⊆ A, so B \ A = ∅.
+
+Suppose that A ∈ E. Give an expression for P(A|Ω) in terms of P(A). 
+In this case we have A ⊆ Ω and P(Ω) = 1, so P(A|Ω) = P(A)/P(Ω) = P(A)
+
+Show that given three events A, B, C ∈ E we have P(A ∩ B ∩ C) = P(A|B ∩ C) · P(B|C) · P(C).
+We have P(A|B ∩ C) = P(A ∩ B ∩ C)/P(B ∩ C) and P(B|C) = P(B ∩ C)/P(C), so P(A|B ∩ C) · P(B|C) · P(C) = P(A ∩ B ∩ C) P(B ∩ C) · P(B ∩ C) P(C) · P(C) = P(A ∩ B ∩ C)
+
+Show that given three events A, B, C ∈ E we have P(A|B ∩ C) = P(B|A∩C)·P(A|C) P(B|C) .
+We substitute in the definition of each of the constituting conditional probabilities to see that P(B|A ∩ C) · P(A|C) P(B|C) =  P(A ∩ B ∩ C) P(A ∩ C)  ·  P(A ∩ C) P(C)  ·  P(B ∩ C) P(C)  −1 = P(A ∩ B ∩ C) P(B ∩ C) = P(A|B ∩ C), as required.
 
 ## Sampling with replacement
 compute the number of different subsets of size 3 from a collectiom of size 8
@@ -50,14 +80,14 @@ To avoid this process we set a random seed set.seed() to get the same output eve
 ```{r}
 sample(10,35,replace=TRUE)
 
-set.seed(0)
+
 for(i in 1:5){
   print(sample(100,5,replace=FALSE))
   #result diff
 }
 
 for(i in 1:5){
-  set.seed(1)
+  set.seed(0)
   print(sample(100,5,replace=FALSE))
   #result same because of set.seed()
 }
@@ -68,8 +98,10 @@ trial=test
 ```{r}
 num_trials <- 1000 #set the number of trials
 set.seed(0) #set the random seed
-
+##sample(x, size, replace = FALSE, prob = NULL)
+##that sample(x) generates a random permutation of the elements of x (or 1:x).
 sampling_with_replacement_simulation <- data.frame(trial=1:num_trials) %>% mutate(sample_balls=map(.x=trial,~sample(10,35,replace=TRUE)))
+
 #count red ball, 1,2,3 = red
 sampling_with_replacement_simulation <-sampling_with_replacement_simulation %>% mutate(num_reds=map_dbl(.x=sample_balls,~sum(.x<4)))
 
@@ -77,11 +109,11 @@ sampling_with_replacement_simulation <-sampling_with_replacement_simulation %>% 
 #pull() is similar to $. sample$num_reds
 num_reds_in_simulation <- sampling_with_replacement_simulation %>% pull(num_reds)
 
-
+### add a column which gives the number of trials which gave each number of reds
 prob_by_num_reds <- prob_by_num_reds %>% mutate(simulation_count=map_dbl(.x=num_reds,~sum(num_reds_in_simulation==.x)))
-prob_by_num_reds
 
 ##expected count
+### add a column which gives the expected number of reds based on the probability formula
 prob_by_num_reds <- prob_by_num_reds %>% mutate(expected_count = num_trials*prob)
 
 prob_by_num_reds %>% rename(Simulation = simulation_count,Expected=expected_count)%>% pivot_longer(cols=c('Simulation','Expected'),names_to = 'Type',values_to = 'count') %>% ggplot(aes(num_reds,count)) + geom_line(aes(linetype=Type,color=Type)) + scale_linetype_manual(values = c('solid','dashed')) + theme_bw() + xlab('Numbers of reds') + ylab('Count')
@@ -91,28 +123,69 @@ prob_by_num_reds %>% rename(Simulation = simulation_count,Expected=expected_coun
 ```
 ## Sample without replacement
 ```{r}
-set.seed(0)
-num_of_trials <- 1000
-spheres <- 100
-red_spheres <- 50
-blue_spheres <- 30
-green_spheres <- 20
-sample_without_replacement <- data.frame(Trial=1:num_of_trials) %>% mutate(Sample_sphere = map(.x=Trial,~sample(100,10,replace = FALSE)))
+##Try this initially with a small number of simulations. Increase your number of simulations to about a relatively large number to get a more accurate answer, once everything seems to be working well
+##1. First set a random seed;
+set.seed(0) 
+##2. Next set a number of trials, a number of reds, a number of blues, a number of greens and a sample size;
+num_trials<- 1000
+n_red<-50
+n_blue<-30
+n_green<-20
+sample_size<-10
+##3. Now use a combination of the functions sample(), mutate() and map() to generate your samples. Here you are creating sample of size 10 from a collection of 100 balls - the sampling is done without replacement;
+total<-n_red+n_blue+n_green
+sampling_without_replacement_simulation<-data.frame(trial=1:num_trials)%>%
+mutate(sample_balls=map(.x=trial,~sample(total,sample_size,replace = FALSE)))%>%
+# simulate without replacement the sampling of 10 balls from a bag of 100
+mutate(num_reds=map_dbl(.x=sample_balls,~sum(.x<=n_red)))%>%
+mutate(num_blues=map_dbl(.x=sample_balls,~sum((n_red<.x)&(.x<=n_red+n_blue))))%>%
+mutate(num_greens=map_dbl(.x=sample_balls,~sum((n_red+n_blue<.x)&
+(.x<=n_red+n_blue+n_green))))%>%
+# count the number of each colour the minimum of the three counts
+mutate(colour_missing=(pmin(num_reds,num_blues,num_greens)==0))
+# look for missing colours
+sampling_without_replacement_simulation
+prob_missing_simulation<-mean(sampling_without_replacement_simulation%>%
+pull(colour_missing))
 
-sample_without_replacement <- sample_without_replacement %>% mutate(nums_red=map_dbl(.x=Sample_sphere,~sum(.x<31)),num_blue=map_dbl(.x=Sample_sphere,~sum(.x>31 & .x<81)),num_green=map_dbl(.x=Sample_sphere,~sum(.x > 81 & .x<101)))
-
-red <- sample_without_replacement %>% pull(nums_red)
-blue <- sample_without_replacement %>% pull(num_blue)
-green <- sample_without_replacement %>% pull(num_green)
-min_x <- pmin(red,blue,green)
-counts <- map_dbl(.x=min_x,~sum(.x==0))
-count <- 0
-for(i in counts){
-  if(i==0){
-    count<-count+1
-  }
-}
-prop <- count/1000
-prop
 ```
- 
+
+Once you have a simulation based answer you can try and use “combinations” with n choose r to compute the
+probability directly. First aim and compute the number of subsets of size 10 from 100 which either entirely
+miss out one of the subsets Reds = {1, . . . , 50}, Blues = {51, . . . , 80}, Greens = {81, . . . , 100}. Be careful
+not to double count some of these subsets! Once you have computed all such subsets combine with the
+formula for the total number of subsets of size 10 from a set of 100, to compute the probability.
+
+We first compute the number of subsets of size 10 containing no reds, no blues and no greens:
+1. NR - The number of subsets with no reds is 50 c 10
+2. NB 70 c 10
+3. NG 80 c 10
+Next we count the number of all red, all blue and all green:
+1. R 50 c 10
+2. B 30 c 10
+3. G 20 c 10
+Now the total number of subsets with a missing colour is Q = (NR + NB + NG) − (MR + MB + MG).
+The total number of subsets of size 10 from a collection of a 100 is T = 100 c 10
+```{r}
+NR=choose(total-n_red,sample_size)
+NB=choose(total-n_blue,sample_size)
+NG=choose(total-n_green,sample_size)
+MR=choose(n_red,sample_size)
+MB=choose(n_blue,sample_size)
+MG=choose(n_green,sample_size)
+Q=NR+NB+NG-MR-MB-MG
+TS=choose(total,sample_size)
+prob_missing_theory=Q/TS
+prob_missing_simulation
+prob_missing_theory
+```
+
+## Mutual independence and pair-wise independent
+Verify that P(A ∩ B) = P(A) · P(B), P(A ∩ C) = P(A) · P(C) and P(B ∩ C) = P(B) · P(C). Hence, we deduce that the events A, B, C are pair-wise independent.
+Observe that A ∩ B = {(1, 1, 0)} so P(A ∩ B) = 14 = P(A) · P(B). We proceed in the same wau for the remaining cases.
+
+What is A ∩ B ∩ C? What is P(A ∩ B ∩ C)?
+Observe that A ∩ B ∩ C = ∅ and so P(A ∩ B ∩ C) = 0
+
+Are the events A,B,C mutually independent?
+We have P(A∩B∩C) = 0 ̸= 18 = P(A)·P(B)·P(C). Hence, these events cannot be mutually independen

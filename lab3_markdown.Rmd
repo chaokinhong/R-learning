@@ -26,6 +26,7 @@ impute_by_median<-function(x){
 v<-c(1,2,NA,4)
 impute_by_median(v)
 ```
+
 ## map2 function
 iterates over two variables in paralled rather than one
 
@@ -60,6 +61,7 @@ df_xy_impute <- df_xy_missing %>% mutate(x=x,y=impute_by_median(y))
 df_xy_impute                                     
                                           
 ```
+
 Combine the dataframes df_xy, df_xy_missing and df_xy_impute and plot it
 ```{r}
 df_xy <- df_xy %>%mutate(source='original')
@@ -84,7 +86,11 @@ wins_data_frame <- read_excel(file_path,sheet = 'Wins')
 wins_data_frame %>% select(1:5) %>% head(3)
 rename_data <- wins_data_frame %>% rename(Team=...1)
 longer_data <- rename_data %>% pivot_longer(cols = !Team, names_to = 'Year',values_to = 'Value',)
+##cols=which cols to row, name_to=give a name to the val of col name
+longer_data
 separate_data <- longer_data %>% separate(Value, into = c('Wins','Total'), sep='of', convert = TRUE)
+## convert = true, type convert
+
 wins_tidy <- separate_data %>% mutate(Team = as.character(Team),Year= as.integer(Year), Wins = as.integer(Wins), Total = as.integer(Total))
 wins_tidy%>% dim()
 wins_tidy %>% head(5)
@@ -100,8 +106,8 @@ hockey_df <- data_combine %>% mutate(Wins=Wins,Losses=Losses,Total=Total,Draws=T
 head(hockey_df)
 
 ```
-## conclude
 
+## conclude
 ```{r}
 hockey_conclude <- hockey_df %>% group_by(Team) %>% select(Wins_rt,Losses_rt,Draws_rt) %>%summarise(win_mean=mean(Wins_rt,na.rm=TRUE),lose_mean=mean(Losses_rt,na.rm=TRUE),draw_mean=mean(Draws_rt,na.rm=TRUE),win_median=median(Wins_rt,na.rm=TRUE),lose_median=median(Losses_rt,na.rm=TRUE),draw_median=median(Draws_rt,na.rm=TRUE))
 hockey_conclude %>% arrange(win_mean)
@@ -117,6 +123,7 @@ penguins_data <- penguins %>% select(-species,-island,-sex)
 
 
 ```
+
 ## correlate function
 -unlist simplifies it to produce a vector which contains all the atomic components which occur in x.
 -abs(x) computes the absolute value of x
