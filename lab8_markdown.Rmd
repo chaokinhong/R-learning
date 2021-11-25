@@ -1,0 +1,65 @@
+---
+title: "Lab8_markdown"
+output: html_document
+---
+
+## Load library
+```{r}
+library(palmerpenguins)
+library(tidyverse)
+```
+
+## Dataset
+drop_na:Drop rows containing missing values
+```{r}
+pang_AC <- penguins %>% drop_na(species,body_mass_g) %>% filter(species != 'Gentoo')
+head(pang_AC)
+
+```
+
+## Unpaired t-test function
+sym:take strings as input and turn them into symbols
+unique returns a vector, data frame or array like x but with duplicate elements/rows removed.
+[rows,cols]
+```{r}
+u_t_test <- function(data,val_col,group_col,var_equal){
+  separate_df <- pang_AC %>% group_by(!!sym(group_col)) %>% summarise(expectation = mean(!!sym(val_col),na.rm =1), sd_ = sd(!!sym(val_col),na.rm=1),num_rows=n())
+  n_0 <- separate_df$num_rows[1]
+  n_1 <- separate_df$num_rows[2]
+  mean_0 <- separate_df$expectation[1]
+  mean_1 <- separate_df$expectation[2]
+  sd_0 <- separate_df$sd_[1]
+  sd_1 <- separate_df$sd_[2]
+  if(var_equal==FALSE){
+  sd_combined <- sqrt(((n_0-1)*sd_0^2+(n_1-1)*sd_1^2)/(n_0+n_1-2))
+  t_statistic <- (mean_0-mean_1)/(sqrt(sd_0^2/n_0+sd_1^2/n_1))
+  p_value <- 2*(1-pt(abs(t_statistic),df=n_0+n_1-2))
+  }else{
+  sd_combined <- sqrt(((n_0-1)*sd_0^2+(n_1-1)*sd_1^2)/(n_0+n_1-2))
+  t_statistic <- (mean_0-mean_1)/(sd_combined*sqrt(1/n_0+1/n_1))
+  p_value <- 2*(1-pt(abs(t_statistic),df=n_0+n_1-2))
+  }
+  return(c(t_statistic,p_value))
+   }
+
+
+u_t_test(data=pang_AC,val_col ='body_mass_g',group_col = 'species',var_equal = FALSE)
+
+```
+## Investigating test size for an unpaired Student's t-test
+
+```{r}
+num_trials <- 10000
+sample_size <- 30
+mu_0 <- 1
+mu_1 <- 1
+sigma_0 <- 3
+sigma_1 <- 3
+alpha <- 0.01
+
+set.seed(0)
+single_alpha_test_size_simulation_df<-data.frame(trial=seq(num_trials))%>%mutate(sample_0=map(.x=trial,.f=~rnorm(n=sample_size,mean=mu_0,sd=sigma_0)),sample_1=map(.x=trial,.f=~rnorm(n=sample_size,mean=mu_1,sd=sigma_1)))%>%mutate(p_value=pmap(.l=list(trial,sample_0,sample_1),.f=~t.test(..2,..3,var.equal = TRUE)$p.value))%>%mutate(type_1_error=p_value<alpha)
+
+single_alpha_test_size_simulation_df %>% pull(type_1_error) %>% mean()
+```
+
