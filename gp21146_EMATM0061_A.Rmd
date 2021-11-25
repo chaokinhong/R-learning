@@ -1,0 +1,141 @@
+---
+title: "Final_project"
+output: html_document
+---
+
+## Load library
+```{r}
+library(readxl)
+library(tidyverse)
+
+```
+
+## A1: Load data and number of rows and columns
+```{r}
+folder_path <- 'C:/Users/Cam/Desktop/UOB/SCEM/Final project/'
+file_name <- 'finance_data_EMATM0061.csv'
+file_path <- paste(folder_path,file_name,sep = "")
+finance_data_original <- read_csv(file_path)
+n_row_cols <- c(nrow(finance_data_original),ncol(finance_data_original))
+n_row_cols
+```
+
+## A2: Subset of 'finance_data_original' dataframe
+1. select the columns need to rename
+2. rename the columns
+```{r}
+finance_data <- finance_data_original %>% select(state_year_code,Details.Education.Education.Total,Details.Health.Health.Total.Expenditure,Details.Transportation.Highways.Highways.Total.Expenditure,Totals.Revenue,Totals.Expenditure) %>% rename(state_year_code=state_year_code,education_expenditure=Details.Education.Education.Total,health_expenditure=Details.Health.Health.Total.Expenditure,transport=Details.Transportation.Highways.Highways.Total.Expenditure,totals_revenue=Totals.Revenue,totals_expenditure=Totals.Expenditure)
+
+finance_data %>% select(state_year_code,education_expenditure,health_expenditure) %>% head(5)
+
+
+```
+
+## A3: Create a new column
+```{r}
+finance_data <- finance_data %>% mutate(totals_savings=(totals_revenue-totals_expenditure)) 
+
+finance_data %>% select(state_year_code,totals_revenue,totals_savings) %>% head(3)
+```
+
+## A4: Separate  state and year and upper and lower case
+**note:**
+
+1. add_column(data,.before,.after)
+2. map : input a vector
+
+```{r}
+finance_data <- finance_data %>% separate(state_year_code,into=c('state','year'),sep='__')
+
+## pull out state and map it 
+state_title <- finance_data %>% pull(state) %>% as.vector() %>% map(str_to_title)
+
+## replace the new state columns from previous one
+finance_data <- finance_data %>% select(-state) %>% add_column(state =unlist(state_title),.before = 'year')
+finance_data %>% select('state','year','totals_revenue','totals_expenditure','totals_savings') %>% head(3)
+```
+
+## A5: Plot the graph of year and revenue
+**note:**
+
+1. missing value: 1.filter(complete.cases(.)) 2. inpute by mean
+2. be careful of type when using ggplot
+3. unit of data, calculating by yourself ,and need to change type of the needed calculated data to numeric
+```{r}
+##Imputation by mean
+inpute_by_mean <- function(x){
+  mu <- mean(x,na.rm=1)
+  impute_f <- function(z){
+    if(is.na(z)){
+      return(mu)
+    }else{
+      return(z)
+    }
+  }
+  return(map_dbl(x,impute_f))
+}
+
+
+finance_data  %>% group_by(state) %>% filter(state=='Kentucky'||state=='Louisiana'|| state=='Mississippi'|| state=='Montana') %>% mutate(totals_revenue=inpute_by_mean(totals_revenue)) %>% ggplot(aes(x=as.numeric(year),color=state,y=as.numeric(totals_revenue)/1000000,linetype=state )) + geom_smooth() + xlab('Year') +ylab('Revenue(millions $)') 
+
+
+```
+
+## A6: Get_decade function
+```{r}
+
+get_decade <- function(x){
+  check_na <- function(z){
+    if(is.na(z)){
+      return(NA)
+    }else{
+      ##round down year/10 and times 10 to the result
+    decade <- floor(as.numeric(z)/10)*10
+  return(decade)
+    }
+  }
+  return(map_dbl(as.numeric(x),check_na))
+}
+
+##add decade column
+decade <- get_decade(finance_data$year)
+finance_data <- finance_data %>% add_column(decade=decade,.after = 'year')
+##get the highest saving by arrange to desc order and slice the first 3.
+highest_saving <- finance_data %>% filter(decade==2000) %>% group_by(state) %>% summarise(mean_saving = mean(totals_savings,na.rm=1)) %>% arrange(desc(mean_saving)) %>% slice(1:3)
+highest_saving
+## The highest saving states are Texas, Ohio and California
+```
+
+## A7: Alaska summary
+```{r}
+
+## summarize function
+alaska_summary <- finance_data %>% filter(state=='Alaska' & (decade==1990 || decade==2000 || decade==2010)) %>% group_by(decade) %>% summarise(ed_mn=mean(education_expenditure,na.rm=1),ed_md=median(education_expenditure,na.rm=1),he_mn=mean(health_expenditure,na.rm=1),he_md=median(health_expenditure,na.rm = 1),tr_mn=mean(transport,na.rm=1),tr_md=median(transport,na.rm=1))
+alaska_summary
+```
+
+## A8: Inpute by median in idaho_2000 
+```{r}
+## inpute by median function
+inpute_by_median <- function(x){
+  md <- median(x,na.rm = 1)
+  check_na <- function(z){
+    if(is.na(z)){
+      return(md)
+    }else{
+      return(z)
+    }
+  }
+  return(map_dbl(x,check_na))
+}
+
+test <- c(1,3,4,NA)
+
+
+##idaho_2000
+## use mutate function to replace the previous columns
+idaho_2000 <- finance_data %>% filter(state=='Idaho'& decade==2000) %>% select(-state,-decade) %>% mutate(education_expenditure= inpute_by_median(education_expenditure), health_expenditure=inpute_by_median(health_expenditure),transport_expenditure=inpute_by_median(transport),totals_revenue=inpute_by_median(totals_revenue),totals_expenditure=inpute_by_median(totals_expenditure),totals_savings=inpute_by_median(totals_savings))
+
+idaho_2000 %>% select(year,health_expenditure,education_expenditure,totals_savings) %>% head(5)
+```
+
